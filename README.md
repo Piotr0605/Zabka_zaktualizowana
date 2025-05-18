@@ -23,32 +23,30 @@ pip install pandas openpyxl
 
 ## Struktura
 
-```
+```text
 frog_package/
-│
 ├── data/
-│     customers.csv
-│     products.xlsx
-│
+│   ├── customers.csv
+│   └── products.xlsx
 ├── DATABASE/
-│     (pliki historii zakupów klientów)
-│
+│   └── (pliki historii zakupów klientów)
 ├── frog/
-│     __init__.py
-│     auth.py
-│     config.ini
-│     customer_manager.py
-│     gui.py
-│     main.py
-│     product_manager.py
-│
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── config.ini
+│   ├── customer_manager.py
+│   ├── gui.py
+│   ├── main.py
+│   └── product_manager.py
 ├── venv/
-│     (wirtualne środowisko, nie ruszaj)
-│
+│   └── (wirtualne środowisko, nie ruszaj)
 └── README.md
 
+---
 
-```
+
+
+
 
 ## Uruchomienie
 

@@ -1,21 +1,49 @@
-# Frog_package – aplikacja sklepowa w Pythonie
+# Żabka Online – Funkcyjny sklep spożywczy
 
-## Opis
-
-Aplikacja sklepowa z graficznym interfejsem (Tkinter), koszykiem, historią zakupów, zarządzaniem kontem klienta oraz możliwością wyboru motywu graficznego.
-
----
-
-## Wymagania
-
-- **Python 3.10 lub nowszy**
-- **System:** Windows, Linux lub MacOS
+Aplikacja Python do zarządzania sklepem online Żabka, umożliwiająca:
+- rejestrację klientów (z automatycznym generowaniem ID),
+- logowanie oraz obsługę haseł (hashowanie SHA-256),
+- przeglądanie i edycję produktów,
+- robienie zakupów do koszyka oraz zapisywanie historii transakcji,
+- zarządzanie danymi klienta (telefon, email, hasło),
+- przyjazny interfejs graficzny (Tkinter) z obsługą skórek, autouzupełnianiem, responsywnym layoutem i historią zakupów.
 
 ---
 
-## Instalacja bibliotek
+## **Struktura katalogów**
 
-W terminalu, w katalogu projektu, wpisz:
+```
+frog_package/
+│
+├── frog/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── gui.py
+│   ├── auth.py
+│   ├── customer_manager.py
+│   ├── product_manager.py
+│   └── config.ini         # Tworzy się automatycznie przy pierwszym uruchomieniu GUI
+│
+├── data/
+│   ├── products.xlsx
+│   └── customers.csv
+│
+├── DATABASE/              # Folder z paragonami klientów (pliki txt)
+│
+└── README.md
+```
+
+---
+
+## **Wymagania**
+
+- Python **3.10+** (zalecany 3.11/3.12)
+- Biblioteki:
+    - `tkinter` (standardowy w Pythonie)
+    - `pandas`
+    - `openpyxl` (do obsługi plików `.xlsx` przez pandas)
+
+Instalacja wymaganych pakietów (w terminalu/PowerShell):
 
 ```bash
 pip install pandas openpyxl
@@ -23,90 +51,94 @@ pip install pandas openpyxl
 
 ---
 
-## Struktura katalogów
+## **Uruchomienie aplikacji**
 
-```text
-frog_package/
-├── data/
-│   ├── customers.csv
-│   └── products.xlsx
-├── DATABASE/
-│   └── (pliki historii zakupów klientów)
-├── frog/
-│   ├── __init__.py
-│   ├── auth.py
-│   ├── config.ini
-│   ├── customer_manager.py
-│   ├── gui.py
-│   ├── main.py
-│   └── product_manager.py
-├── venv/
-│   └── (wirtualne środowisko, nie ruszaj)
-└── README.md
-```
+1. **Sklonuj repozytorium lub rozpakuj folder projektu** w PyCharm/VSCode.
+2. **Upewnij się, że struktura wygląda jak powyżej** (folder `frog`, `data`, `DATABASE`).
+3. **Uzupełnij początkowe bazy** (jeśli puste):  
+   - Plik `data/products.xlsx` zawiera przykładowe produkty (możesz dodać ręcznie lub przez aplikację).
+   - Plik `data/customers.csv` zostanie utworzony automatycznie.
+4. **Uruchom aplikację**:
+   - W PyCharm kliknij `frog/main.py` i uruchom (`Shift+F10` lub zielony trójkąt).
+   - Lub z terminala:
+     ```
+     python -m frog.main
+     ```
+5. **Wybierz tryb pracy**:
+    - `1` – logowanie,
+    - `2` – rejestracja,
+    - `3` – uruchom GUI bez logowania (gość).
 
 ---
 
-## Uruchomienie aplikacji
+## **Główne funkcje**
 
-1. **Otwórz terminal** w katalogu głównym `frog_package`.
-2. Uruchom aplikację poleceniem:
+- **Rejestracja i logowanie** (hasła hashowane, sprawdzanie unikalności emaili).
+- **Koszyk zakupowy**: dodawanie, usuwanie, finalizacja z zapisem paragonu.
+- **Edycja danych klienta**: email, telefon, zmiana hasła.
+- **Historia zakupów** dla każdego klienta (oddzielny plik .txt).
+- **Responsywny layout GUI**: autouzupełnianie, dynamiczne sortowanie tabel, różne motywy kolorystyczne.
+- **Czysty paradygmat funkcyjny** (funkcje wyższego rzędu, dekoratory, czyste funkcje, obsługa wyjątków).
+- **Łatwość rozbudowy** o kolejne funkcjonalności.
 
-    ```bash
+---
+
+## **Przykładowe komendy administracyjne (konsola)**
+
+- Dodanie produktu:
+    ```python
+    from frog.product_manager import add_product
+    add_product({"ID": "P999", "Nazwa": "Nowy produkt", "Kategoria": "Test", "Cena": 9.99, "Ilość_w_magazynie": 10})
+    ```
+
+- Usunięcie produktu:
+    ```python
+    from frog.product_manager import remove_product
+    remove_product("P999")
+    ```
+
+- Rejestracja klienta (konsola):
+    ```
     python -m frog.main
-    ```
-
-    Jeśli pojawi się błąd z brakiem bibliotek, doinstaluj poleceniem:
-
-    ```bash
-    pip install pandas openpyxl
+    # wybierz opcję 2 i podaj dane
     ```
 
 ---
 
-## Obsługa
+## **Zgłaszanie błędów i sugestii**
 
-Po starcie w terminalu pojawi się menu:
-
-```
-1) Zaloguj
-2) Zarejestruj
-3) GUI bez logowania
-```
-
-- **1 – logowanie:** wpisz ID i hasło
-- **2 – rejestracja:** podaj imię, nazwisko, mail, telefon i hasło
-- **3 – GUI bez logowania:** otwiera sklep jako gość (bez historii zakupów)
-
-W aplikacji możesz:
-- przeglądać produkty i koszyk,
-- kupować, usuwać produkty,
-- oglądać historię zakupów (po zalogowaniu),
-- zmieniać dane konta, hasło, telefon,
-- wybierać motyw graficzny.
+Jeśli coś nie działa lub masz pomysł na nową funkcjonalność, dodaj Issue na GitHubie lub napisz do autora.
 
 ---
 
-## Pliki danych
+## **Licencja**
 
-- `data/customers.csv` – lista klientów
-- `data/products.xlsx` – lista produktów
-- `DATABASE/` – historia zakupów klientów (po jednym pliku na klienta)
+Projekt stworzony do celów edukacyjnych w ramach kursu Python.
 
 ---
 
-## Najczęstsze problemy
+# Podsumowanie zgodności z wymaganiami projektu
 
-- **Brak bibliotek:** uruchom `pip install pandas openpyxl`
-- **Brak katalogów:** utwórz foldery `data/` i `DATABASE/` jeśli nie istnieją
-- **Brak plików danych:** stwórz lub skopiuj przykładowy `customers.csv` i `products.xlsx` do `data/`
-- **Błąd ścieżki:** uruchamiaj z katalogu głównego `frog_package`
-- **Problemy z uruchomieniem:** sprawdź komunikaty w terminalu oraz wersję Pythona
+- **Trzy pliki z danymi**: `products.xlsx`, `customers.csv`, folder `DATABASE/` (paragony klientów)
+- **Trzy główne moduły**:
+    - `product_manager.py` – dodawanie/usuwanie produktów
+    - `customer_manager.py` – rejestracja/usuwanie klientów, obsługa zakupów
+    - `auth.py` – logowanie, rejestracja z hashem, walidacja emaila, obsługa wyjątków
+- **main.py** – funkcja główna `__main__()` uruchamia program
+- **Interfejs graficzny** (GUI, Tkinter): obsługa klientów, koszyka, edycja danych, skórki, historia, responsywny layout, autouzupełnianie
+- **Logika funkcyjna**:
+    - **Funkcje wyższego rzędu** (np. sortowanie, menu, filtry)
+    - **Dekoratory** (logowanie akcji)
+    - **Funkcje wielu zmiennych wejściowych** (np. register_customer, add_product)
+    - **Funkcje zagnieżdżone** (wewnątrz run_gui, obsługa zdarzeń)
+    - **Obsługa wyjątków** w min. 3 funkcjach
+    - **Dokumentacja** min. 3 funkcji i 2 modułów (docstringi)
+- **Historia zakupów**: każdy klient ma swój plik z historią transakcji w `DATABASE/`
+- **Możliwość rozwoju**: łatwa rozbudowa o nowe raporty/statystyki
+- **Brak klas poza GUI** – całość oparta o funkcje
 
 ---
 
-## Kontakt
-
-Projekt stworzony przez [Twoje Imię i Nazwisko].
-
----
+## **Autor:**
+Projekt funkcyjny sklepu online Żabka  
+2024

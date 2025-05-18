@@ -1,5 +1,6 @@
 """
-Moduł odpowiedzialny za logowanie i uwierzytelnianie.
+Moduł odpowiedzialny za logowanie i uwierzytelnianie (wersja funkcyjna).
+Zawiera funkcje: hash_password, authenticate, register_with_password, email_exists, generate_id.
 """
 
 import csv
@@ -8,12 +9,28 @@ import hashlib
 import datetime
 
 CUSTOMERS_CSV = os.path.join(os.path.dirname(__file__), '..', 'data', 'customers.csv')
-
+DATABASE_DIR = os.path.join(os.path.dirname(__file__), '..', 'DATABASE')
 
 def hash_password(password: str) -> str:
     """Zwraca SHA-256 hash hasła."""
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
+def email_exists(email: str) -> bool:
+    """Sprawdza, czy email już jest w bazie."""
+    if not os.path.exists(CUSTOMERS_CSV):
+        return False
+    with open(CUSTOMERS_CSV, newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        return any(row.get('Email') == email for row in reader)
+
+def generate_id() -> str:
+    """Generuje nowe 4-cyfrowe ID klienta."""
+    if not os.path.exists(CUSTOMERS_CSV):
+        return "1000"
+    with open(CUSTOMERS_CSV, newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        ids = [int(row['ID']) for row in reader if row.get('ID', '').isdigit()]
+        return str(max(ids) + 1) if ids else "1000"
 
 def authenticate(customer_id: str, password: str) -> bool:
     """
@@ -33,37 +50,21 @@ def authenticate(customer_id: str, password: str) -> bool:
         return False
     return False
 
-
-def register_with_password(imie, nazwisko, email, password, phone=""):
-    from frog.customer_manager import register_customer
-    password_hash = hash_password(password)
-    return register_customer(imie, nazwisko, email, password_hash, phone)
-
+def register_with_password(imie: str, nazwisko: str, email: str, password: str, phone: str = "") -> str:
     """
-    Rejestruje nowego klienta z hasłem, zapisuje hash hasła.
-    Sprawdza, czy użytkownik o podanym emailu już istnieje.
-    :param first_name: imię klienta
-    :param last_name: nazwisko klienta
-    :param email: adres email (jednoznaczny identyfikator)
-    :param password: hasło w formie jawnej
-    :return: ID nowo utworzonego klienta
-    :raises ValueError: jeśli email jest już zarejestrowany
+    Rejestruje nowego klienta z hasłem i numerem telefonu.
+    Zwraca ID nowego klienta lub podnosi wyjątek jeśli email już istnieje.
     """
-    # Sprawdzenie obecności pliku i unikalności email
-    if os.path.exists(CUSTOMERS_CSV):
-        with open(CUSTOMERS_CSV, newline='', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get('Email') == email:
-                    raise ValueError("Użytkownik z takim emailem już istnieje.")
-    # Generowanie ID i hash hasła
-    from frog.customer_manager import generate_id
+    # Sprawdzenie czy email już istnieje
+    if email_exists(email):
+        raise ValueError("Użytkownik z takim emailem już istnieje.")
+    # Generowanie ID
     cid = generate_id()
     pwd_hash = hash_password(password)
-    now = datetime.datetime.now().isoformat()
-    fieldnames = ['ID', 'Imię', 'Nazwisko', 'Email', 'Data_rejestracji', 'PasswordHash']
-    # Sprawdzenie czy należy dodać header
-    header_needed = not os.path.exists(CUSTOMERS_CSV) or 'PasswordHash' not in open(CUSTOMERS_CSV, encoding='utf-8').readline()
+    now = datetime.datetime.now().strftime("%Y-%m-%d")
+    fieldnames = ['ID', 'Imię', 'Nazwisko', 'Email', 'Data_rejestracji', 'PasswordHash', 'Telefon']
+    header_needed = (not os.path.exists(CUSTOMERS_CSV)) or \
+                    ('PasswordHash' not in open(CUSTOMERS_CSV, encoding='utf-8').readline())
     os.makedirs(os.path.dirname(CUSTOMERS_CSV), exist_ok=True)
     with open(CUSTOMERS_CSV, 'a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -71,15 +72,15 @@ def register_with_password(imie, nazwisko, email, password, phone=""):
             writer.writeheader()
         writer.writerow({
             'ID': cid,
-            'Imię': first_name,
-            'Nazwisko': last_name,
+            'Imię': imie,
+            'Nazwisko': nazwisko,
             'Email': email,
             'Data_rejestracji': now,
-            'PasswordHash': pwd_hash
+            'PasswordHash': pwd_hash,
+            'Telefon': phone
         })
-    # Utworzenie pliku transakcji klienta
-    db_folder = os.path.join(os.path.dirname(__file__), '..', 'DATABASE')
-    os.makedirs(db_folder, exist_ok=True)
-    open(os.path.join(db_folder, f"{cid}.txt"), 'w', encoding='utf-8').close()
+    # Utworzenie pliku historii zakupów
+    os.makedirs(DATABASE_DIR, exist_ok=True)
+    open(os.path.join(DATABASE_DIR, f"{cid}.txt"), 'a', encoding='utf-8').close()
     return cid
 

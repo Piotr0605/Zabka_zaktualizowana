@@ -1,9 +1,5 @@
 """
-Interfejs graficzny Frog z autouzupełnianiem (ID i nazwy), zakładką Koszyk,
-predefiniowanymi skórkami, responsywnym układem oraz funkcjami
-dodawania i usuwania produktów, poprawionym paragonem i historią zakupów
-z kwotami, możliwością dodania numeru telefonu jeśli go brak,
-i prawidłowym askinteger().
+Interfejs graficzny Frog (Tkinter) – elementy funkcyjne: dekoratory, funkcje wyższego rzędu, czyste funkcje.
 """
 
 import tkinter as tk
@@ -17,28 +13,33 @@ import csv
 import datetime
 import configparser
 
-# --- ścieżki ---
 BASE_DIR      = os.path.dirname(__file__)
 RECEIPTS_DIR  = os.path.join(BASE_DIR, '..', 'DATABASE')
 CUSTOMERS_CSV = os.path.join(BASE_DIR, '..', 'data', 'customers.csv')
 CONFIG_INI    = os.path.join(BASE_DIR, 'config.ini')
 
-# --- config.ini ---
-config = configparser.ConfigParser()
-if os.path.exists(CONFIG_INI):
-    config.read(CONFIG_INI)
-else:
-    config['settings'] = {'theme': 'light'}
-    with open(CONFIG_INI, 'w') as f:
-        config.write(f)
+def log_action(action):
+    """Dekorator logujący akcje GUI."""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            print(f"[LOG] {action}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 def save_theme(theme_name):
+    """Zapisuje wybrany motyw do pliku konfiguracyjnego."""
+    config = configparser.ConfigParser()
+    if os.path.exists(CONFIG_INI):
+        config.read(CONFIG_INI)
+    else:
+        config['settings'] = {}
     config['settings']['theme'] = theme_name
     with open(CONFIG_INI, 'w') as f:
         config.write(f)
 
-# --- AutocompleteEntry dla ID i Nazwy ---
 class AutocompleteEntry(ttk.Entry):
+    """Pole z autouzupełnianiem dla produktów."""
     def __init__(self, products_getter, *args, **kwargs):
         var = kwargs.get('textvariable')
         if var is None:
@@ -95,12 +96,12 @@ class AutocompleteEntry(ttk.Entry):
         self.listbox = None
         self.event_generate('<KeyRelease>')
 
-
+@log_action("Uruchomienie GUI")
 def run_gui(client_id=None):
+    """Uruchamia interfejs graficzny sklepu."""
     root = tk.Tk()
     root.title("Sklep Frog")
 
-    # --- motywy ---
     style = ttk.Style()
     custom_themes = {
         'light':  {},
@@ -108,17 +109,20 @@ def run_gui(client_id=None):
         'pastel': {'background':'#f7e6ff','foreground':'#5d0350'},
         'retro':  {'background':'#fff4e6','foreground':'#553300'},
     }
-    current = config['settings'].get('theme','light')
+    config = configparser.ConfigParser()
+    if os.path.exists(CONFIG_INI):
+        config.read(CONFIG_INI)
+    current = config['settings'].get('theme','light') if 'settings' in config else 'light'
     def apply_theme(name):
         style.theme_use('clam')
-        cfg = custom_themes.get(name,{})
+        cfg = custom_themes.get(name, {})
         root.configure(bg=cfg.get('background','white'))
         style.configure('.', background=cfg.get('background','white'),
                              foreground=cfg.get('foreground','black'))
         save_theme(name)
     apply_theme(current)
 
-    # --- wybór skórki ---
+    # Skórka
     theme_frame = ttk.Frame(root)
     ttk.Label(theme_frame, text="Skórka:").pack(side='left')
     theme_cb = ttk.Combobox(theme_frame, values=list(custom_themes.keys()), state='readonly')
@@ -127,7 +131,7 @@ def run_gui(client_id=None):
     theme_cb.bind('<<ComboboxSelected>>', lambda e: apply_theme(theme_cb.get()))
     theme_frame.pack(anchor='ne', padx=10, pady=5)
 
-    # --- zakładki główne ---
+    # Zakładki
     nb = ttk.Notebook(root)
     tab_products = ttk.Frame(nb)
     tab_cart     = ttk.Frame(nb)
@@ -144,9 +148,14 @@ def run_gui(client_id=None):
 
     # --- Produkty ---
     def refresh_products():
+        """Odświeża listę produktów (z funkcją sortowania jako wyższego rzędu)."""
+        def sort_key(item):
+            # sortujemy po nazwie (przykład)
+            return item['Nazwa']
+        products = sorted(list_products(), key=sort_key)
         tree_products.delete(*tree_products.get_children())
         q = search_var.get().strip().lower()
-        for p in list_products():
+        for p in products:
             pid  = str(p.get('ID','')).lower()
             name = str(p.get('Nazwa','')).lower()
             cat  = str(p.get('Kategoria','')).lower()
@@ -156,19 +165,20 @@ def run_gui(client_id=None):
                     values=(p['ID'], p['Nazwa'], f"{p['Cena']:.2f}", p['Ilość_w_magazynie'])
                 )
 
+    @log_action("Dodawanie do koszyka")
     def add_to_cart():
         sel = tree_products.selection()
         if not sel:
             return
         pid, name, price, stock = tree_products.item(sel[0])['values']
         qty = simpledialog.askinteger(
-            "Ilość", f"Ile sztuk {name}?",
-            minvalue=1, maxvalue=int(stock), parent=root
+            "Ilość", f"Ile sztuk {name}?", minvalue=1, maxvalue=int(stock), parent=root
         )
         if qty:
             cart.append((pid, qty))
             refresh_cart()
 
+    @log_action("Dodawanie produktu do bazy")
     def do_add_product():
         try:
             df = pd.read_excel(DATA_PATH)
@@ -188,8 +198,7 @@ def run_gui(client_id=None):
                 return
             price = float(price_str.replace(',','.'))
             stock = simpledialog.askinteger(
-                "Dodaj produkt", "Ilość w magazynie:",
-                minvalue=0, parent=root
+                "Dodaj produkt", "Ilość w magazynie:", minvalue=0, parent=root
             )
             if stock is None:
                 return
@@ -208,6 +217,7 @@ def run_gui(client_id=None):
         except Exception as e:
             messagebox.showerror("Błąd", str(e), parent=root)
 
+    @log_action("Usuwanie produktu z bazy")
     def do_remove_product():
         try:
             key = simpledialog.askstring("Usuń produkt","Podaj ID lub nazwę:", parent=root)
@@ -272,14 +282,14 @@ def run_gui(client_id=None):
         total = 0.0
         df = pd.read_excel(DATA_PATH).set_index('ID')
         text.insert('end',
-                    f"=== PARAGON Frog ===\nKlient: {cid}\n"
-                    f"Data: {datetime.datetime.now():%Y-%m-%d %H:%M}\n\n"
-                    )
+            f"=== PARAGON Frog ===\nKlient: {cid}\n"
+            f"Data: {datetime.datetime.now():%Y-%m-%d %H:%M}\n\n"
+        )
         for pid, qty in items:
-            cena = float(df.at[pid, 'Cena'])
+            cena = float(df.at[pid,'Cena'])
             lt = cena * qty
             total += lt
-            text.insert('end', f"{pid} {df.at[pid, 'Nazwa']} x{qty} @ {cena:.2f} = {lt:.2f}\n")
+            text.insert('end', f"{pid} {df.at[pid,'Nazwa']} x{qty} @ {cena:.2f} = {lt:.2f}\n")
         text.insert('end', f"\nRAZEM: {total:.2f} PLN")
         text.config(state='disabled')
         text.pack(fill='both', expand=True)
@@ -320,19 +330,15 @@ def run_gui(client_id=None):
 
     # --- Historia ---
     tree_hist = ttk.Treeview(tab_history, columns=('Data', 'Pozycje', 'Kwota'), show='headings')
-    tree_hist.heading('Data', text='Data');
-    tree_hist.column('Data', width=150, stretch=True)
-    tree_hist.heading('Pozycje', text='Pozycje');
-    tree_hist.column('Pozycje', stretch=True)
-    tree_hist.heading('Kwota', text='Kwota');
-    tree_hist.column('Kwota', stretch=True)
+    tree_hist.heading('Data', text='Data');    tree_hist.column('Data', width=150, stretch=True)
+    tree_hist.heading('Pozycje', text='Pozycje'); tree_hist.column('Pozycje', stretch=True)
+    tree_hist.heading('Kwota', text='Kwota');   tree_hist.column('Kwota', stretch=True)
     tree_hist.pack(fill='both', expand=True, padx=10, pady=5)
 
     def refresh_history():
         tree_hist.delete(*tree_hist.get_children())
         if not client_id:
             return
-        RECEIPTS_DIR = os.path.join(BASE_DIR, '..', 'DATABASE')
         path = os.path.join(RECEIPTS_DIR, f"{client_id}.txt")
         if os.path.exists(path):
             for line in open(path, encoding='utf-8'):
@@ -356,9 +362,6 @@ def run_gui(client_id=None):
                     '', 'end',
                     values=(dt, ', '.join(details), f"{total:.2f} PLN")
                 )
-
-    nb.bind('<<NotebookTabChanged>>',
-            lambda e: refresh_history() if nb.index('current') == 2 else None)
 
     nb.bind('<<NotebookTabChanged>>',
             lambda e: refresh_history() if nb.index('current') == 2 else None)
@@ -540,14 +543,14 @@ def run_gui(client_id=None):
             acct_nb.add(tab_login, text='Logowanie / Rejestracja')
             build_login_tab()
 
-    # --- Konto: tworzenie i start ---
+    # Konto: tworzenie i start
     acct_nb = ttk.Notebook(tab_account)
     tab_login = ttk.Frame(acct_nb)
     tab_info  = ttk.Frame(acct_nb)
     acct_nb.pack(fill='both', expand=True, padx=10, pady=10)
     build_account_tabs()
 
-    # --- Uruchomienie ---
+    # Uruchomienie
     refresh_products()
     refresh_cart()
     root.mainloop()

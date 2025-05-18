@@ -1,65 +1,75 @@
 """
-Moduł do zarządzania produktami (dodawanie, usuwanie, listowanie).
+Moduł obsługi produktów sklepu Żabka – wersja funkcyjna.
+Zawiera funkcje do dodawania, usuwania i listowania produktów spożywczych.
 """
 
 import pandas as pd
 import os
-from functools import wraps
 
-# Ścieżka do pliku Excel z produktami
-DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'products.xlsx')
+BASE_DIR = os.path.dirname(__file__)
+DATA_PATH = os.path.join(BASE_DIR, '..', 'data', 'products.xlsx')
 
-
-def handle_exceptions(func):
-    """Dekorator obsługujący wyjątki I/O oraz ValueError."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
+def log_operation(operation):
+    """Dekorator logujący operacje na produktach."""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            print(f"[LOG] {operation}, args: {args}, kwargs: {kwargs}")
             return func(*args, **kwargs)
-        except (IOError, ValueError) as e:
-            print(f"Błąd w {func.__name__}: {e}")
-    return wrapper
+        return wrapper
+    return decorator
 
-
-@handle_exceptions
-def add_product(product: dict):
+def list_products():
     """
-    Dodaje nowy produkt do bazy Excel.
-    :param product: słownik z kluczami ID, Nazwa, Kategoria, Cena, Ilość_w_magazynie
+    Zwraca listę produktów jako listę słowników.
     """
-    df = pd.read_excel(DATA_PATH)
-    if product['ID'] in df['ID'].values:
-        raise ValueError("Produkt o tym ID już istnieje.")
-    # od Pandas 2.x append() jest usunięte, więc używamy concat
-    new_row = pd.DataFrame([product])
-    df = pd.concat([df, new_row], ignore_index=True)
-    df.to_excel(DATA_PATH, index=False)
-    print(f"Produkt {product['Nazwa']} dodany.")
-
-
-@handle_exceptions
-def remove_product(identifier, by='ID'):
-    """
-    Usuwa produkt po ID lub nazwie.
-    :param identifier: ID lub nazwa produktu
-    :param by: 'ID' lub 'Nazwa'
-    """
-    df = pd.read_excel(DATA_PATH)
-    initial = len(df)
-    df = df[df[by] != identifier]
-    if len(df) == initial:
-        raise ValueError("Nie znaleziono produktu.")
-    df.to_excel(DATA_PATH, index=False)
-    print(f"Produkt(y) z {by}={identifier} usunięto.")
-
-
-@handle_exceptions
-def list_products() -> list[dict]:
-    """
-    Zwraca listę wszystkich produktów jako listę słowników.
-    Każdy słownik zawiera pola: ID, Nazwa, Kategoria, Cena, Ilość_w_magazynie.
-    :return: lista słowników z danymi produktów
-    """
+    if not os.path.exists(DATA_PATH):
+        return []
     df = pd.read_excel(DATA_PATH)
     return df.to_dict(orient='records')
 
+@log_operation("Dodanie produktu")
+def add_product(product):
+    """
+    Dodaje nowy produkt do bazy produktów.
+    :param product: dict z kluczami: ID, Nazwa, Kategoria, Cena, Ilość_w_magazynie
+    """
+    try:
+        if not os.path.exists(DATA_PATH):
+            df = pd.DataFrame(columns=['ID', 'Nazwa', 'Kategoria', 'Cena', 'Ilość_w_magazynie'])
+        else:
+            df = pd.read_excel(DATA_PATH)
+        df = pd.concat([df, pd.DataFrame([product])], ignore_index=True)
+        df.to_excel(DATA_PATH, index=False)
+    except Exception as e:
+        print("Błąd dodawania produktu:", e)
+        raise
+
+@log_operation("Usuwanie produktu")
+def remove_product(key, by='ID'):
+    """
+    Usuwa produkt na podstawie ID lub nazwy.
+    :param key: ID lub nazwa produktu
+    :param by: 'ID' lub 'Nazwa'
+    """
+    try:
+        if not os.path.exists(DATA_PATH):
+            raise FileNotFoundError("Brak bazy produktów.")
+        df = pd.read_excel(DATA_PATH)
+        if by == 'ID':
+            df = df[df['ID'] != key]
+        else:
+            df = df[df['Nazwa'].str.lower() != str(key).lower()]
+        df.to_excel(DATA_PATH, index=False)
+    except Exception as e:
+        print("Błąd usuwania produktu:", e)
+        raise
+
+def count_products(filter_func=None):
+    """
+    Funkcja wyższego rzędu: Zwraca liczbę produktów spełniających filter_func (lub wszystkich).
+    :param filter_func: funkcja filtrująca lub None
+    """
+    products = list_products()
+    if filter_func is None:
+        return len(products)
+    return len([p for p in products if filter_func(p)])

@@ -2,4 +2,4 @@ ID,Imię,Nazwisko,Email,Data_rejestracji,PasswordHash,Telefon
 6877,Piotr,Sienkiewicz,sienkiewicz135@gmail.com,2025-05-17,42ce1e7...,123456789
 1739,Anna,Nowak,anna.nowak@example.com,2025-05-16,842f186...,987654321
 9979,Jan,Kowalski,jan.kowalski@example.com,2025-05-10,9b33ee3...,
-9980,admin,admin,admin@gmail.com,2025-05-18,8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918,123456789
+9980,admin,admin,admin@gmail.com,2025-05-18,8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918,111222333

@@ -104,19 +104,6 @@ pip install pandas openpyxl
     ```
 
 ---
-
-## **Zgłaszanie błędów i sugestii**
-
-Jeśli coś nie działa lub masz pomysł na nową funkcjonalność, dodaj Issue na GitHubie lub napisz do autora.
-
----
-
-## **Licencja**
-
-Projekt stworzony do celów edukacyjnych w ramach kursu Python.
-
----
-
 # Podsumowanie zgodności z wymaganiami projektu
 
 - **Trzy pliki z danymi**: `products.xlsx`, `customers.csv`, folder `DATABASE/` (paragony klientów)
@@ -137,8 +124,4 @@ Projekt stworzony do celów edukacyjnych w ramach kursu Python.
 - **Możliwość rozwoju**: łatwa rozbudowa o nowe raporty/statystyki
 - **Brak klas poza GUI** – całość oparta o funkcje
 
----
 
-## **Autor:**
-Projekt funkcyjny sklepu online Żabka  
-2024
